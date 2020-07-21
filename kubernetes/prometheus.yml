@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config
+      serviceAccountName: prometheus
+---
+apiVersion: v1
+kind: Service
+apiVersion: v1
+metadata:
+  name: prometheus
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 80 
+      targetPort: 9090
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: virtual-host-ingress
+spec:
+  rules:
+    - host: prometheus.dev-kubernetes.ocf.berkeley.edu
+      http:
+        paths:
+          - backend:
+              serviceName: prometheus
+              servicePort: 80
+
+
